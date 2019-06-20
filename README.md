@@ -3,7 +3,7 @@
 MemoryConsumer is a program which its performance depends on the
 total memory and the load of the program.
 
-The program is constantly controlling an array of 1MB objects.
+The program is constantly controlling an array of 1MB chunks.
 According to the current load, the program create threads which
 constantly writing to the memory. This causes the performance to
 increase as the load increases.
@@ -17,10 +17,11 @@ Performance is calculated by the amount of MBs written divided by the elapsed ti
 # Usage
 
 ```bash
-./memory_consumer <sleep after write second (float)>
+./memory_consumer <int: max memory (MB)> <float: sleep after write (seconds)>
 ```
 
-`sleep_after_write`: amount of time in seconds that each memory-writing thread will sleep after writing 1MB of memory.
+`max memory`: The maximal memory consumption. 
+`sleep after write`: The amount of time in seconds that each memory-writing thread will sleep after writing 1MB of memory.
 
 # Compile
 ```bash

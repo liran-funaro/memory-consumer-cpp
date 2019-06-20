@@ -29,7 +29,7 @@ static const regex inputRegex("(load|memory|quit|perf|resetperf|maxrand)(\\s*:\\
 
 int main(int argc, char** argv) {
 	if(argc < 3) {
-		std::cerr << "Parameters: <max memory (int)> <sleep after write seconds (float)>"
+		std::cerr << "Parameters: <int: max memory (MB)> <float: sleep after write (seconds)>"
 				<< std::endl;
 		return 1;
 	}
