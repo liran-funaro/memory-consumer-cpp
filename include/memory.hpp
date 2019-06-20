@@ -73,7 +73,10 @@ public:
 			size_mb = max_memory - mem_top;
 
 		auto t = mem_arr + (mem_top * mb);
-		generate(t, t + (size_mb * mb), std::ref(rbe));
+		auto e =  t + (size_mb * mb);
+		for(;t < e; t += (1<<12))
+			t[0] = '\0';
+		// generate(t, t + (size_mb * mb), std::ref(rbe));
 		this->mem_top.store(mem_top + size_mb);
 	}
 

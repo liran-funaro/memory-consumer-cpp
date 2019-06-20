@@ -25,7 +25,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 using std::regex;
 using std::regex_constants::icase;
 
-static const regex inputRegex("(load|memory|quit|perf|resetperf|maxrand)(\\s*:\\s*(\\d+))?", icase);
+static const regex inputRegex("(load|memory|quit|perf|resetperf|maxrand)(?:\\s*:?\\s*(\\d+))?", icase);
 
 int main(int argc, char** argv) {
 	if(argc < 3) {
@@ -42,7 +42,7 @@ int main(int argc, char** argv) {
 	bool quit = false;
 	for (std::string line; !quit && std::getline(std::cin, line);) {
 		if (std::regex_search(line, command_match, inputRegex)) {
-			quit = mc.doOp(command_match[1], command_match[3]);
+			quit = mc.doOp(command_match[1], command_match[2]);
 		}
 	}
 	return 0;
