@@ -66,7 +66,7 @@ public:
 		if(running.load())
 			return;
 
-		t.reset(new thread(*this));
+		t = std::make_unique<thread>(&Worker::run, this);
 		running.store(true);
 	}
 
@@ -79,7 +79,7 @@ public:
 			t->join();
 	}
 
-	void operator()() {
+	void run() {
 		while (running.load()) {
 			randomWrite();
 			if (running.load() && sleep_after_write_ms > 1)

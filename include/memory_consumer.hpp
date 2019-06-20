@@ -107,7 +107,7 @@ public:
 			changeMemory((unsigned int) std::stoi(param));
 		else if (op.compare("perf") == 0) {
 			auto perf = stats.perf();
-			std::cout << "memory: " << memory.size()
+			std::cout << "memory: " << memory.mem_top.load()
 					  << ", load: " << workers.size()
 					  << ", hit-rate: "<< perf.hit_rate
 					  << ", throughput: " << perf.throughput

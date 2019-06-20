@@ -47,17 +47,22 @@ private:
 	random_bytes_engine rbe;
 
 public:
-	atomic_uint max_memory;
+	const unsigned int max_memory;
 	atomic_uint max_rand;
 	atomic_uint mem_top;
-	vector<unsigned char> mem_arr;
+	unsigned char *mem_arr;
 
 	Memory(unsigned int max_memory) : max_memory(max_memory), max_rand(0), mem_top(0) {
-		mem_arr.resize(max_memory * mb);
+		mem_arr = (unsigned char *) mmap(NULL, max_memory * mb,
+				PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+	}
+
+	~Memory() {
+		munmap(mem_arr, mem_top * mb);
 	}
 
 	size_t size() const {
-		return mem_arr.size();
+		return mem_top;
 	}
 
 	void allocMemory(unsigned int size_mb) {
@@ -67,7 +72,7 @@ public:
 		if (mem_top + size_mb > max_memory)
 			size_mb = max_memory - mem_top;
 
-		auto t = mem_arr.begin() + (mem_top * mb);
+		auto t = mem_arr + (mem_top * mb);
 		generate(t, t + (size_mb * mb), std::ref(rbe));
 		this->mem_top.store(mem_top + size_mb);
 	}
@@ -83,13 +88,14 @@ public:
 		mem_top -= size_mb;
 		this->mem_top.store(mem_top);
 
-		madvise(mem_arr.data() + mem_top, max_memory - mem_top, MADV_DONTNEED);
+		madvise(mem_arr + (mem_top*mb), (max_memory - mem_top)*mb,
+				MADV_DONTNEED); //MADV_REMOVE
 	}
 
 	void randomWrite(unsigned int index, random_bytes_engine& rbe) {
 		if (index >= mem_top)
 			return;
-		auto t = mem_arr.begin() + (index * mb);
+		auto t = mem_arr + (index * mb);
 		generate(t, t + mb, std::ref(rbe));
 	}
 };

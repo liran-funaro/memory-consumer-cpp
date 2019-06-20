@@ -31,10 +31,11 @@
 #include <sys/mman.h>
 
 #include "memory.hpp"
-#include "worker.hpp"
 
 using std::atomic_ulong;
 using std::unique_ptr;
+using std::chrono::seconds;
+using std::chrono::steady_clock;
 
 
 class StatsResult {
@@ -51,18 +52,18 @@ public:
 	atomic_ulong hits;
 	atomic_ulong requests;
 
-	Stats() : hits(0), requests(0) {}
+	Stats() : measureStart(steady_clock::now()), hits(0), requests(0) {}
 
 	void resetperf() {
-		measureStart = std::chrono::steady_clock::now();
+		measureStart = steady_clock::now();
 		hits.store(0);
 		requests.store(0);
 	}
 
 	StatsResult perf() {
 		StatsResult res;
-		std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
-		res.duration = (double) std::chrono::duration_cast<std::chrono::seconds>(
+		steady_clock::time_point now = steady_clock::now();
+		res.duration = (double) std::chrono::duration_cast<seconds>(
 				now - measureStart).count();
 		if (res.duration > 0) {
 			res.hit_rate = (double) (hits.load()) / res.duration;

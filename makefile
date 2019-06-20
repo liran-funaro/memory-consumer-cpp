@@ -15,17 +15,13 @@ CPP_SOURCE=$(foreach dir,$(SRC_FOLDERS),$(dir)/*.cpp)
 
 CPP_TEST_SOURCE=$(TESTS_DIR)/$(test).cpp
 
-CPP_FLAGS=-std=c++17 -O3 -Wall -Wextra -Werror -pedantic-errors $(CPP_INCLUDE)
+CPP_FLAGS=-std=c++17 -O3 -Wall -Wextra -Werror -pedantic-errors -pthread $(CPP_INCLUDE)
 ifeq (color, yes)
 all::
 	CPP_FLAGS += -fdiagnostics-color=always
 endif
 
-COMPILE=$(CC) $(CPP_FLAGS) $(CPP_DEFINE) $(CPP_SOURCE)
-
-RELEASE_FLAGS=-funroll-loops
-DEBUG_FLAGS=-g -D DEBUG
-
+COMPILE=$(CC) $(CPP_FLAGS) $(CPP_SOURCE)
 
 NAME=memory_consumer
 
@@ -34,7 +30,7 @@ EXEC=$(BIN_DIR)/$(NAME)
 all: buildpath $(EXEC)
 
 $(EXEC): $(CPP_FILES) $(HEADER_FILES)
-	$(COMPILE) $(RELEASE_FLAGS) -o $(EXEC)
+	$(COMPILE) -o $(EXEC)
 	
 buildpath:
 	@if [ ! -d "$(BIN_DIR)" ]; then mkdir $(BIN_DIR); fi
