@@ -22,7 +22,6 @@
 
 #include <vector>
 #include <atomic>
-#include <random>
 #include <algorithm>
 #include <functional>
 #include <climits>
@@ -42,15 +41,8 @@ using std::atomic_uint;
 using std::unique_ptr;
 using std::string;
 
-using random_bytes_engine = std::independent_bits_engine<
-    std::default_random_engine, CHAR_BIT, unsigned char>;
 
 class MemoryConsumer {
-public:
-
-
-public:
-	random_bytes_engine rbe;
 	unsigned long sleep_after_write_ms;
 
 	Memory memory;
