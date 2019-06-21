@@ -88,13 +88,11 @@ public:
 	}
 
 	void randomWrite() {
-		if (memory.max_rand <= 0)
-			return;
 		std::uniform_int_distribution<unsigned int> dist(0, memory.max_rand.load());
 		unsigned int index = dist(rbe);
 		stats.requests++;
 
-		if (index >= memory.mem_top)
+		if (index >= memory.mem_top.load())
 			return;
 
 		memory.randomWrite(index, rbe);

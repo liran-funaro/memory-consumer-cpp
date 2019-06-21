@@ -30,6 +30,9 @@
 
 #include <sys/mman.h>
 
+#include <iostream>
+#include <iomanip>
+
 using std::vector;
 using std::atomic_uint;
 using std::generate;
@@ -39,22 +42,26 @@ using random_bytes_engine = std::independent_bits_engine<
     std::default_random_engine, CHAR_BIT, unsigned char>;
 
 
+#define PAGE_SIZE ((1<<12))
+
+
 class Memory {
 public:
-	static const unsigned int mb = (unsigned int) (1<<20);
-
-private:
-	random_bytes_engine rbe;
+	static const unsigned long mb = (unsigned long) (1<<20);
 
 public:
-	const unsigned int max_memory;
+	const unsigned long max_memory;
 	atomic_uint max_rand;
 	atomic_uint mem_top;
 	unsigned char *mem_arr;
 
-	Memory(unsigned int max_memory) : max_memory(max_memory), max_rand(0), mem_top(0) {
+	Memory(unsigned long max_memory) : max_memory(max_memory), max_rand(0), mem_top(0) {
 		mem_arr = (unsigned char *) mmap(NULL, max_memory * mb,
-				PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+				PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0);
+		if (mem_arr == MAP_FAILED) {
+			perror("mmap");
+			exit(EXIT_FAILURE);
+		}
 	}
 
 	~Memory() {
@@ -74,9 +81,8 @@ public:
 
 		auto t = mem_arr + (mem_top * mb);
 		auto e =  t + (size_mb * mb);
-		for(;t < e; t += (1<<12))
+		for(;t < e; t += PAGE_SIZE)
 			t[0] = '\0';
-		// generate(t, t + (size_mb * mb), std::ref(rbe));
 		this->mem_top.store(mem_top + size_mb);
 	}
 
@@ -96,7 +102,7 @@ public:
 	}
 
 	void randomWrite(unsigned int index, random_bytes_engine& rbe) {
-		if (index >= mem_top)
+		if (index >= mem_top.load())
 			return;
 		auto t = mem_arr + (index * mb);
 		generate(t, t + mb, std::ref(rbe));

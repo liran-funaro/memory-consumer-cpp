@@ -34,7 +34,7 @@ int main(int argc, char** argv) {
 		return 1;
 	}
 
-	unsigned int max_memory = std::atoi(argv[1]);
+	unsigned long max_memory = (unsigned long) std::atol(argv[1]);
 	double sleep_after_write_seconds = std::atof(argv[2]);
 	MemoryConsumer mc(max_memory, sleep_after_write_seconds);
 

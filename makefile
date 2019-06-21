@@ -22,15 +22,22 @@ all::
 endif
 
 COMPILE=$(CC) $(CPP_FLAGS) $(CPP_SOURCE)
+DEBUG_FLAGS=-g -D DEBUG
 
 NAME=memory_consumer
 
 EXEC=$(BIN_DIR)/$(NAME)
+EXEC_DEBUG=$(BIN_DIR)/$(NAME)-debug
 
 all: buildpath $(EXEC)
 
+debug: buildpath $(EXEC_DEBUG)
+
 $(EXEC): $(CPP_FILES) $(HEADER_FILES)
 	$(COMPILE) -o $(EXEC)
+	
+$(EXEC_DEBUG): $(CPP_FILES) $(HEADER_FILES)
+	$(COMPILE) $(DEBUG_FLAGS) -o $(EXEC_DEBUG)
 	
 buildpath:
 	@if [ ! -d "$(BIN_DIR)" ]; then mkdir $(BIN_DIR); fi
