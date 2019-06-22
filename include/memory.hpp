@@ -97,8 +97,7 @@ public:
 		mem_top -= size_mb;
 		this->mem_top.store(mem_top);
 
-		madvise(mem_arr + (mem_top*mb), (max_memory - mem_top)*mb,
-				MADV_DONTNEED); //MADV_REMOVE
+		madvise(mem_arr + (mem_top*mb), (max_memory - mem_top)*mb, MADV_DONTNEED); //MADV_REMOVE
 	}
 
 	void randomWrite(unsigned int index, random_bytes_engine& rbe) {

@@ -95,10 +95,12 @@ public:
 			auto memoryTarget = memory_target.load();
 			memory_lock.unlock();
 
-			if (memory.size() < memoryTarget)
-				memory.allocMemory(1);
-			else if (memory.size() > memoryTarget)
+			if (memory.size() < memoryTarget) {
+				auto diff = memoryTarget - memory.size();
+				memory.allocMemory(diff < 128 ? diff : 128);
+			} else if (memory.size() > memoryTarget) {
 				memory.releaseMemory(memory.size() - memoryTarget);
+			}
 		}
 	}
 
@@ -137,6 +139,7 @@ public:
 			auto perf = stats.perf();
 			auto UUID = std::stoul(param);
 			std::cout << "memory: " << memory.size()
+					  << ", max-rand: " << memory.max_rand.load()
 					  << ", load: " << workers.size()
 					  << ", hit-rate: "<< perf.hit_rate
 					  << ", throughput: " << perf.throughput
