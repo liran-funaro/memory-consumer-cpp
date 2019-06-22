@@ -28,6 +28,9 @@
 #include <memory>
 #include <string>
 #include <iostream>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
 
 #include <sys/mman.h>
 
@@ -50,10 +53,22 @@ class MemoryConsumer {
 
 	vector<unique_ptr<Worker>> workers;
 
+	std::mutex load_lock;
+	std::condition_variable load_cv;
+	atomic_uint load_target = {0};
+	unique_ptr<thread> load_thread;
+
+	std::mutex memory_lock;
+	std::condition_variable memory_cv;
+	atomic_uint memory_target = {0};
+	unique_ptr<thread> memory_thread;
+
 public:
 	MemoryConsumer(unsigned int max_memory, double sleep_after_write_seconds) :
 		sleep_after_write_ms((unsigned long)(sleep_after_write_seconds * 1000)),
 		memory(max_memory) {
+		load_thread = std::make_unique<thread>(&MemoryConsumer::changeLoadThread, this);
+		memory_thread = std::make_unique<thread>(&MemoryConsumer::changeMemoryThread, this);
 	}
 
 	void addLoad() {
@@ -62,53 +77,76 @@ public:
 		workers.push_back(std::move(w));
 	}
 
-	unique_ptr<Worker> reduceLoad() {
+	void reduceLoad() {
 		int sz = workers.size();
 		if (sz == 0)
-			return NULL;
+			return;
 
 		unique_ptr<Worker> w = std::move(workers.back());
 		workers.pop_back();
 		w->stopWorker();
-		return w;
+		w->join();
 	}
 
-	void changeMemory(unsigned int mem_target) {
-		while (memory.size() < mem_target)
-			memory.allocMemory(mem_target - memory.size());
-		while (memory.size() > mem_target)
-			memory.releaseMemory(memory.size() - mem_target);
+	void changeMemoryThread() {
+		while(true) {
+			std::unique_lock<std::mutex> lk(memory_lock);
+			memory_cv.wait(lk, [this]{return memory.size() != memory_target.load();});
+			auto memoryTarget = memory_target.load();
+			memory_lock.unlock();
+
+			if (memory.size() < memoryTarget)
+				memory.allocMemory(1);
+			else if (memory.size() > memoryTarget)
+				memory.releaseMemory(memory.size() - memoryTarget);
+		}
 	}
 
-	void changeLoad(unsigned int load_target) {
-		while (workers.size() < load_target)
-			addLoad();
+	void changeMemory(unsigned int memoryTarget) {
+		std::unique_lock<std::mutex> lk(memory_lock);
+		this->memory_target.store(memoryTarget);
+		memory_cv.notify_one();
+	}
 
-		vector<unique_ptr<Worker>> terminated;
-		while (workers.size() > load_target)
-			terminated.push_back(reduceLoad());
+	void changeLoadThread() {
+		while(true) {
+			std::unique_lock<std::mutex> lk(load_lock);
+			load_cv.wait(lk, [this]{return workers.size() != load_target.load();});
+			auto loadTarget = load_target.load();
+			load_lock.unlock();
 
-		for (unique_ptr<Worker>& w : terminated)
-			w->join();
+			if (workers.size() < loadTarget)
+				addLoad();
+			else if (workers.size() > loadTarget)
+				reduceLoad();
+		}
+	}
+
+	void changeLoad(unsigned int loadTarget) {
+		std::unique_lock<std::mutex> lk(load_lock);
+		this->load_target.store(loadTarget);
+		load_cv.notify_one();
 	}
 
 	bool doOp(string op, string param) {
 		if (op.compare("load") == 0)
-			changeLoad((unsigned int) std::stoi(param));
+			changeLoad((unsigned int) std::stoul(param));
 		else if (op.compare("memory") == 0)
-			changeMemory((unsigned int) std::stoi(param));
+			changeMemory((unsigned int) std::stoul(param));
 		else if (op.compare("perf") == 0) {
 			auto perf = stats.perf();
-			std::cout << "memory: " << memory.mem_top.load()
+			auto UUID = std::stoul(param);
+			std::cout << "memory: " << memory.size()
 					  << ", load: " << workers.size()
 					  << ", hit-rate: "<< perf.hit_rate
 					  << ", throughput: " << perf.throughput
 					  << ", duration: " << perf.duration
+					  << ", UUID: " << UUID
 					  << std::endl;
 		} else if (op.compare("resetperf") == 0)
 			stats.resetperf();
 		else if  (op.compare("maxrand") == 0)
-			memory.max_rand.store((unsigned int) std::stoi(param));
+			memory.max_rand.store((unsigned int) std::stoul(param));
 		else if (op.compare("quit") == 0) {
 			changeLoad(0);
 			changeMemory(0);

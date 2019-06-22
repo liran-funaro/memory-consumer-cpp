@@ -69,7 +69,7 @@ public:
 	}
 
 	size_t size() const {
-		return mem_top;
+		return mem_top.load();
 	}
 
 	void allocMemory(unsigned int size_mb) {
