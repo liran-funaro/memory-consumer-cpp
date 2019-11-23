@@ -1,9 +1,9 @@
 .project
+.cproject
 .classpath
 .settings
 
 bin
 
-syntax: glob
 *.class
 *.jar
